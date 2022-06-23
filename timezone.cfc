@@ -1,8 +1,10 @@
 <cfcomponent displayname="timezone" hint="various timezone functions not included in mx: version 2.1 jul-2005 Paul Hastings (paul@sustainbleGIS.com)" output="No">
-<!---
-author:		paul hastings <paul@sustainableGIS.com>
-date:		11-sep-2003
-revisions:
+	<!---
+	author:	paul hastings <paul@sustainableGIS.com>
+	date:	11-sep-2003
+	revisions:
+			6/23 Gregory modified around line 455 with a note as this was causing errors with cf2021
+			5/26/2022 Gregory Alexander Fixed a bug and minor formatting changes
 			23-oct-2003 changed to use argument dates rather than setting calendar time, forgot that
 			java MONTH start with zero. kept gregorian calendar object for timezone offset in order to
 			use DST_OFFSET field in calendar object.
@@ -36,11 +38,11 @@ revisions:
 			setDefaultTimeZone, getTimeZoneShortName, getCurrentTime John Thwaites: johnthwaites@logicdepot.com
 			
 			
-notes:		this cfc contains methods to handle some timezone functionality not in cfmx as well as when
+	notes:		this cfc contains methods to handle some timezone functionality not in cfmx as well as when
 			you need to "cast" to a specific timezone (cf's timezone functions are tied to server). it
 			requires the use of createObject.
 
-methods in this CFC:
+	methods in this CFC:
 			- isDST determines if a given date & timezone are in DST. if no date or timezone is passed
 			the method defaults to current date/time and server timezone. PUBLIC.
 			- getAvailableTZ returns an array of available timezones on this server (ie according to
@@ -71,12 +73,12 @@ methods in this CFC:
 			- setDefaultTimeZone sets the default timezone, to override the server derrived zone.
 			- getDefaultTimeZoneId returns the id of the default timezone. PUBLIC.
 			- getTimeZoneShortName eturns the short name for a timezone. PUBLIC.
-			- getCurrentTime rreturns the current time in the specified timezone, or default. PUBLIC.
+			- getCurrentTime returns the current time in the specified timezone, or default. PUBLIC.
 			- getStandardTimeZoneList reurns a list of standard time zone id's fom internal structure. PUBLIC. 
 			- getStandardTimeZoneDesc returns the description for a timezone from the internal structure. PUBLIC.
 			- loadStandardTimeZones loads the internal structure of "standard" timezones. PRIVATE. 
 			- addStandardTimeZone used by loadStandardTimeZones to add entries to internal structure. PRIVATE.
- --->
+ 	--->
 
 	<!--- the time zone object itself --->
 	<cfset variables.tzObj = createObject("java","java.util.TimeZone")>
@@ -94,55 +96,48 @@ methods in this CFC:
 		<cfreturn this>
 	</cffunction>
 
-
 	<!--- isValidTZ --->
 	<cffunction name="isValidTZ" output="false" returntype="boolean" access="public"
-				hint="validates if a given timezone is in list of timezones available on this server">
+			hint="validates if a given timezone is in list of timezones available on this server">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn IIF(listFindNoCase(variables.tzList,arguments.tz), true, false)>
 	</cffunction>
 
-
 	<!--- isDST --->
 	<cffunction name="isDST" output="false" returntype="boolean" access="public"
-				hint="determines if a given date in a given timezone is in DST">
+			hint="determines if a given date in a given timezone is in DST">
 		<cfargument name="dateToTest" required="false" type="date" default="#now()#">
 		<cfargument name="tz" required="true" default="#variables.mytz#">
 		<cfreturn variables.tzObj.getTimeZone(arguments.tz).inDaylightTime(arguments.dateTotest)>
 	</cffunction>
 
-
 	<!--- getAvailableTZ --->
 	<cffunction name="getAvailableTZ" output="false" returntype="array" access="public"
-				hint="returns a list of timezones available on this server">
+			hint="returns a list of timezones available on this server">
 		<cfreturn listToArray(variables.tzList)>
 	</cffunction>
 
-
 	<!--- getTZByOffset --->
 	<cffunction name="getTZByOffset" output="false" returntype="array" access="public"
-				hint="returns a list of timezones available on this server for a given raw offset">
+			hint="returns a list of timezones available on this server for a given raw offset">
 		<cfargument name="thisOffset" required="true" type="numeric">
 		<cfset var rawOffset = javacast("long", arguments.thisOffset * 3600000)>
 		<cfreturn variables.tzObj.getAvailableIDs(rawOffset)>
 	</cffunction>
 
-
 	<!--- usesDST --->
 	<cffunction name="usesDST" output="false" returntype="boolean" access="public"
-				hint="determines if a given timezone uses DST">
+			hint="determines if a given timezone uses DST">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn variables.tzObj.getTimeZone(arguments.tz).useDaylightTime()>
 	</cffunction>
 
-
 	<!--- getRawOffset --->
 	<cffunction name="getRawOffset" output="false" access="public" returntype="numeric"
-				hint="returns rawoffset in hours">
+			hint="returns rawoffset in hours">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn variables.tzObj.getTimeZone(arguments.tz).getRawOffset() / 3600000>
 	</cffunction>
-
 
 	<!--- getTZOffset --->
 	<!---
@@ -150,21 +145,10 @@ methods in this CFC:
 	to correct the midnight problem
 	--->
 	<cffunction name="getTZOffset" output="false" access="public" returntype="numeric"
-				hint="returns offset in hours">
+			hint="returns offset in hours">
 		<cfargument name="thisDate" required="no" type="date" default="#now()#">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
-	<!---
-	Removed by John Thwaites 08/29/2010 to correct midnight problem
-
-		<cfset var timezone = variables.tzObj.getTimeZone(arguments.tz)>
-		<cfset var tYear = javacast("int", Year(arguments.thisDate))>
-		<!--- java months are 0 based --->
-		<cfset var tMonth = javacast("int", month(arguments.thisDate)-1)>
-		<cfset var tDay = javacast("int", Day(thisDate))>
-		<!--- day of week --->
-		<cfset var tDOW = javacast("int", DayOfWeek(thisDate))>
-		<cfreturn timezone.getOffset(1, tYear, tMonth, tDay, tDOW, 0) / 3600000>
-	--->
+	
 		<cfreturn getTZOffsetBase(arguments.thisDate, arguments.tz)/3600000>
 	</cffunction>
 
@@ -187,14 +171,12 @@ methods in this CFC:
 		<cfreturn timezone.getOffset(1,tYear,tMonth,tDay,tDOW,tMS)>
 	</cffunction>
 
-
 	<!--- getDST --->
 	<cffunction name="getDST" output="false" access="public" returntype="numeric"
-				hint="returns DST savings in hours">
+			hint="returns DST savings in hours">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn variables.tzObj.getTimeZone(arguments.tz).getDSTSavings() / 3600000>
 	</cffunction>
-
 
 	<!--- castToUTC --->
 	<!---
@@ -202,7 +184,7 @@ methods in this CFC:
 	to correct the midnight problem
 	--->
 	<cffunction name="castToUTC" output="false" access="public" returntype="date"
-				hint="returns UTC from given date in given TZ, takes DST into account">
+			hint="returns UTC from given date in given TZ, takes DST into account">
 		<cfargument name="thisDate" required="yes" type="date">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 
@@ -210,14 +192,13 @@ methods in this CFC:
 		<cfreturn dateAdd("s",thisOffset,arguments.thisDate)>
 	</cffunction>
 
-
 	<!--- castFromUTC --->
 	<!---
 	Corrected by John Thwaites 08/29/2010 to return offest to nearest millisecond
 	to correct the midnight problem
 	--->
 	<cffunction name="castFromUTC" output="false" access="public" returntype="date"
-				hint="returns date in given TZ from given UTC date, takes DST into account">
+			hint="returns date in given TZ from given UTC date, takes DST into account">
 		<cfargument name="thisDate" required="yes" type="date">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 
@@ -225,58 +206,55 @@ methods in this CFC:
 		<cfreturn dateAdd("s",thisOffset,arguments.thisDate)>
 	</cffunction>
 
-
 	<!--- castToServer --->
 	<cffunction name="castToServer" output="false" access="public" returntype="date"
-				hint="returns server date in given TZ from given UTC date, takes DST into account">
+			hint="returns server date in given TZ from given UTC date, takes DST into account">
 		<cfargument name="thisDate" required="yes" type="date">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn dateConvert("utc2Local",castToUTC(arguments.thisDate, arguments.tz))>
 	</cffunction>
 
-
 	<!--- castFromServer --->
 	<cffunction name="castFromServer" output="false" access="public" returntype="date"
-				hint="returns date in given TZ from given server date, takes DST into account">
+			hint="returns date in given TZ from given server date, takes DST into account">
 		<cfargument name="thisDate" required="yes" type="date">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfreturn castFromUTC(dateConvert("local2UTC",arguments.thisDate),arguments.tz)>
 	</cffunction>
 
-
 	<!--- getServerTZ --->
 	<cffunction name="getServerTZ" output="false" access="public" returntype="string"
-				hint="returns server TZ (long)">
+			hint="returns server TZ (long)">
 		<cfreturn variables.tzObj.getDefault().getDisplayName(true, variables.tzObj.LONG)>
 	</cffunction>
 
-
 	<!--- getServerTZShort --->
 	<cffunction name="getServerTZShort" output="false" access="public" returntype="string"
-				hint="returns server TZ (short). contributed by dan switzer: dswitzer@pengoworks.com">
+			hint="returns server TZ (short). contributed by dan switzer: dswitzer@pengoworks.com">
 		<cfreturn variables.tzObj.getDefault().getDisplayName(true, variables.tzObj.SHORT)>
 	</cffunction>
 
-
 	<!--- getServerId --->
 	<cffunction name="getServerId" output="false" access="public" returntype="any"
-				hint="returns the server timezone id. contributed by dan switzer: dswitzer@pengoworks.com">
+			hint="returns the server timezone id. contributed by dan switzer: dswitzer@pengoworks.com">
 		<cfreturn variables.mytz>
 	</cffunction>
-
+		
 	<!--- convertTZ --->
 	<cffunction name="convertTZ" output="No" access="public" returntype="numeric"
-				hint="converts time from one TZ to another . contributed by john thwaites: johnthwaites@logicdepot.com">
+			hint="converts time from one TZ to another. Contributed by john thwaites: johnthwaites@logicdepot.com">
 		<cfargument name="thisDate" required="no" type="date" default="#now()#">
 		<cfargument name="fromTZ" required="no" default="#tzObj.getDefault().ID#">
 		<cfargument name="toTZ" required="no" default="#tzObj.getDefault().ID#">
+			
 		<cfset var utcDate = dateAdd("s",(getTZOffsetBase(arguments.thisDate, arguments.fromTZ)/1000)*-1.00,arguments.thisDate)>
+			
 		<cfreturn dateAdd("s",getTZOffsetBase(utcDate, arguments.toTZ)/1000,utcDate)>
 	</cffunction>
 
 	<!--- getTimeZone --->
 	<cffunction name="getTimeZone" output="false" access="public" returntype="any"
-				hint="returns the timezone detail. contributed by john thwaites: johnthwaites@logicdepot.com">
+			hint="returns the timezone detail. contributed by john thwaites: johnthwaites@logicdepot.com">
 		<cfargument name="tz" required="false" default="#variables.mytz#">
 		<cfargument name="today" required="false" default="#now()#">
 
@@ -294,29 +272,24 @@ methods in this CFC:
 				 
 		
 		// Get the number of hours from GMT
-		
 		stThisTZ.rawOffset = tmptz.getRawOffset();
 		stThisTZ.offset = getTZOffset(arguments.today, arguments.tz);
 		stThisTZ.offsetMinutes = abs(getTZOffset(arguments.today, arguments.tz)) /3600000 % 60;
 				 
-		
 		// Does the time zone have a daylight savings time period?
-		
 		stThisTZ.hasDST = tmptz.useDaylightTime();
 				 
 		
 		// Is the time zone currently in a daylight savings time?
-		
 		stThisTZ.inDST = tmptz.inDaylightTime(arguments.today);
 		</cfscript>
 
 		<cfreturn duplicate(stThisTZ)>
 	</cffunction>
 
-
 	<!--- getDefaultTimeZoneId --->
 	<cffunction name="getDefaultTimeZoneId" access="public" returntype="String"
-				hint="returns default timezoneid. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="returns default timezoneid. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfscript>
 		return variables.defaultTimeZoneId;	
 		</cfscript>
@@ -324,7 +297,7 @@ methods in this CFC:
 
 	<!--- getTimeZoneShortName --->
 	<cffunction name="getTimeZoneShortName" access="public" returntype="String"
-				hint="returns short name of TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="returns short name of TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfargument name="aDate" type="date" required="false" default="#now()#">
 		<cfargument name="aTzId" type="string" required="false" default="#variables.StandardTimezones.DefaultId#">
 		<cfscript>
@@ -334,10 +307,9 @@ methods in this CFC:
 		</cfscript>
 	</cffunction>
 
-	
 	<!--- getCurrentTime --->
 	<cffunction name="getCurrentTime" access="public" returntype="String"
-				hint="returns current time in specified TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="returns current time in specified TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfargument name="aTzId" type="string" required="false" default="#defaultTimeZoneId#">
 		<cfscript>
 		var tmptz = variables.tzObj.getTimeZone(aTzId);
@@ -346,27 +318,24 @@ methods in this CFC:
 		</cfscript>
 	</cffunction>
 
-
 	<!--- setDefaultTimeZone --->
 	<cffunction name="setDefaultTimeZone" access="public" returntype="String"
-				hint="overrides the default TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="overrides the default TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfargument name="aTzId" type="string" required="true">
 		<cfset variables.defaultTimeZoneId = aTzId>
 	</cffunction>
 
-
 	<!--- getStandardTimeZoneList --->
 	<cffunction name="getStandardTimeZoneList" access="public" returntype="String"
-				hint="returns a list of standard TZ id's. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="returns a list of standard TZ id's. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfscript>
 		return variables.standardTimeZones.List;	
 		</cfscript>
 	</cffunction>
 
-
 	<!--- getStandardTimeZoneDesc --->
 	<cffunction name="getStandardTimeZoneDesc" access="public" returntype="String"
-				hint="reurns description of a standard TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
+			hint="reurns description of a standard TZ. contributed by john thwaites: johnthwaites@logicdepot.com">  
 		<cfargument name="aTzId" type="string" required="false" default="#variables.StandardTimezones.DefaultId#">
 		<cfscript>
 		if (structKeyExists(variables.standardTimeZones.Entry, aTzId))
@@ -468,6 +437,7 @@ methods in this CFC:
 		return duplicate(vsTZ);
 		</cfscript>
 	</cffunction>
+		
 	<!--- addStandardTimeZone --->
 	<cffunction name="addStandardTimeZone" access="private">
 		<cfargument name="aTZStruct" type="struct" required="true">
@@ -482,7 +452,8 @@ methods in this CFC:
 	
 		if (isValidTZ(aTZ))
 		{
-			aTZStruct.Entry[aTZ].Detail = getTimeZone(aTZ);
+			// Gregory modified this from 'getTimeZone(aTZ)' to 'variables.tzObj.getTimeZone(aTZ)'
+			aTZStruct.Entry[aTZ].Detail = variables.tzObj.getTimeZone(aTZ);
 		}
 		else
 		{
